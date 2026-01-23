@@ -92,6 +92,14 @@ func main() {
 		}
 	})
 
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "OK",
+			"message": "API Running",
+		})
+	})
+
 	fmt.Println("Server berjalan di http://localhost:8090")
 	err := http.ListenAndServe(":8090", nil)
 	if err != nil {
