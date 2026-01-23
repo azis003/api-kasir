@@ -100,6 +100,29 @@ func main() {
 		})
 	})
 
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		docs := map[string]interface{}{
+			"message": "Selamat datang di API Kasir",
+			"endpoints": []map[string]string{
+				{"method": "GET", "url": "/categories", "description": "Ambil semua kategori"},
+				{"method": "GET", "url": "/categories/{id}", "description": "Ambil detail kategori"},
+				{"method": "POST", "url": "/categories", "description": "Tambah kategori baru"},
+				{"method": "PUT", "url": "/categories/{id}", "description": "Update kategori"},
+				{"method": "DELETE", "url": "/categories/{id}", "description": "Hapus kategori"},
+			},
+		}
+
+		json.NewEncoder(w).Encode(docs)
+	})
+
 	fmt.Println("Server berjalan di http://localhost:8090")
 	err := http.ListenAndServe(":8090", nil)
 	if err != nil {
