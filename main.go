@@ -110,7 +110,7 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 
 		docs := map[string]interface{}{
-			"message": "Selamat datang di API Kasir",
+			"_message_": "Dokumentasi API Kasir",
 			"endpoints": []map[string]string{
 				{"method": "GET", "url": "/categories", "description": "Ambil semua kategori"},
 				{"method": "GET", "url": "/categories/{id}", "description": "Ambil detail kategori"},
