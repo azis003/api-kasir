@@ -33,7 +33,6 @@ var nextID = 1
 
 func main() {
 	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer("_", ""))
 
 	if _, err := os.Stat(".env"); err != nil {
 		viper.SetConfigFile(".env")
