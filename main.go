@@ -10,26 +10,15 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/spf13/viper"
 )
-
-type Category struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
 
 // ubah Config
 type Config struct {
 	Port   string `mapstructure:"PORT"`
 	DBConn string `mapstructure:"DB_CONN"`
 }
-
-var categories = []Category{}
-var nextID = 1
 
 func main() {
 	viper.AutomaticEnv()
@@ -51,79 +40,23 @@ func main() {
 	}
 	defer db.Close()
 
-	http.HandleFunc("/categories", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+	// Dependency Injection: Product
+	productRepo := repositories.NewProductRepository(db)
+	productService := services.NewProductService(productRepo)
+	productHandlers := handlers.NewProductHandler(productService)
 
-		switch r.Method {
-		case "GET":
-			json.NewEncoder(w).Encode(categories)
+	// Dependency Injection: Category
+	categoryRepo := repositories.NewCategoryRepository(db)
+	categoryService := services.NewCategoryService(categoryRepo)
+	categoryHandlers := handlers.NewCategoryHandler(categoryService)
 
-		case "POST":
-			var newCategory Category
-			if err := json.NewDecoder(r.Body).Decode(&newCategory); err != nil {
-				http.Error(w, "Data JSON salah", http.StatusBadRequest)
-				return
-			}
-			newCategory.ID = nextID
-			nextID++
-			categories = append(categories, newCategory)
+	// Routes: Product
+	http.HandleFunc("/api/produk", productHandlers.HandleProducts)
+	http.HandleFunc("/api/produk/", productHandlers.HandleProductByID)
 
-			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(newCategory)
-
-		default:
-			http.Error(w, "Method salah", http.StatusMethodNotAllowed)
-		}
-	})
-
-	http.HandleFunc("/categories/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		idStr := strings.TrimPrefix(r.URL.Path, "/categories/")
-		id, err := strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(w, "ID harus berupa angka", http.StatusBadRequest)
-			return
-		}
-
-		index := -1
-		for i, cat := range categories {
-			if cat.ID == id {
-				index = i
-				break
-			}
-		}
-
-		if index == -1 {
-			http.Error(w, "Kategori tidak ditemukan", http.StatusNotFound)
-			return
-		}
-
-		switch r.Method {
-		case "GET":
-			json.NewEncoder(w).Encode(categories[index])
-
-		case "PUT":
-			var updatedData Category
-			if err := json.NewDecoder(r.Body).Decode(&updatedData); err != nil {
-				http.Error(w, "Data JSON salah", http.StatusBadRequest)
-				return
-			}
-			categories[index].Name = updatedData.Name
-			categories[index].Description = updatedData.Description
-
-			categories[index].ID = id
-
-			json.NewEncoder(w).Encode(categories[index])
-
-		case "DELETE":
-			categories = append(categories[:index], categories[index+1:]...)
-			json.NewEncoder(w).Encode(map[string]string{"message": "Kategori berhasil dihapus"})
-
-		default:
-			http.Error(w, "Method salah", http.StatusMethodNotAllowed)
-		}
-	})
+	// Routes: Category
+	http.HandleFunc("/categories", categoryHandlers.HandleCategories)
+	http.HandleFunc("/categories/", categoryHandlers.HandleCategoryByID)
 
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -150,20 +83,13 @@ func main() {
 				{"method": "POST", "url": "/categories", "description": "Tambah kategori baru"},
 				{"method": "PUT", "url": "/categories/{id}", "description": "Update kategori"},
 				{"method": "DELETE", "url": "/categories/{id}", "description": "Hapus kategori"},
+				{"method": "GET", "url": "/api/produk", "description": "Ambil semua produk"},
+				{"method": "POST", "url": "/api/produk", "description": "Tambah produk baru"},
 			},
 		}
 
 		json.NewEncoder(w).Encode(docs)
 	})
-
-	// Setup Product Dependency Injection
-	productRepo := repositories.NewProductRepository(db)
-	productService := services.NewProductService(productRepo)
-	productHandlers := handlers.NewProductHandler(productService)
-
-	// Setup routes
-	http.HandleFunc("/api/produk", productHandlers.HandleProducts)
-	http.HandleFunc("/api/produk/", productHandlers.HandleProductByID)
 
 	addr := "0.0.0.0:" + config.Port
 	fmt.Println("Server berjalan di", addr)
