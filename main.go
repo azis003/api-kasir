@@ -3,9 +3,17 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"kasir-api/database"
+	"kasir-api/handlers"
+	"kasir-api/repositories"
+	"kasir-api/services"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 type Category struct {
@@ -14,10 +22,36 @@ type Category struct {
 	Description string `json:"description"`
 }
 
+// ubah Config
+type Config struct {
+	Port   string `mapstructure:"PORT"`
+	DBConn string `mapstructure:"DB_CONN"`
+}
+
 var categories = []Category{}
 var nextID = 1
 
 func main() {
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer("_", ""))
+
+	if _, err := os.Stat(".env"); err != nil {
+		viper.SetConfigFile(".env")
+		_ = viper.ReadInConfig()
+	}
+
+	config := Config{
+		Port:   viper.GetString("PORT"),
+		DBConn: viper.GetString("DB_CONN"),
+	}
+
+	// Setup database
+	db, err := database.InitDB(config.DBConn)
+	if err != nil {
+		log.Fatal("Failed to initialize database:", err)
+	}
+	defer db.Close()
+
 	http.HandleFunc("/categories", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -123,8 +157,19 @@ func main() {
 		json.NewEncoder(w).Encode(docs)
 	})
 
-	fmt.Println("Server berjalan di http://localhost:8090")
-	err := http.ListenAndServe(":8090", nil)
+	// Setup Product Dependency Injection
+	productRepo := repositories.NewProductRepository(db)
+	productService := services.NewProductService(productRepo)
+	productHandlers := handlers.NewProductHandler(productService)
+
+	// Setup routes
+	http.HandleFunc("/api/produk", productHandlers.HandleProducts)
+	http.HandleFunc("/api/produk/", productHandlers.HandleProductByID)
+
+	addr := "0.0.0.0:" + config.Port
+	fmt.Println("Server berjalan di", addr)
+
+	err = http.ListenAndServe(addr, nil)
 	if err != nil {
 		fmt.Println("gagal running server")
 	}
