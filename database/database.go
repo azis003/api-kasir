@@ -16,7 +16,8 @@ func InitDB(connectionString string) (*sql.DB, error) {
 		log.Println("ERROR: Connection string tidak valid:", err)
 	} else {
 		// Log host untuk memastikan kita tidak salah connect (misal ke bagian password)
-		log.Printf("Mencoba connect ke Host: %s, User: %s", u.Host, u.User.Username())
+		// Log query params untuk memastikan sslmode terbaca
+		log.Printf("Mencoba connect ke Host: %s, User: %s, Params: %s", u.Host, u.User.Username(), u.RawQuery)
 	}
 
 	// Open database
