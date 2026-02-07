@@ -58,6 +58,13 @@ func main() {
 	http.HandleFunc("/categories", categoryHandlers.HandleCategories)
 	http.HandleFunc("/categories/", categoryHandlers.HandleCategoryByID)
 
+	// Transaction
+	transactionRepo := repositories.NewTransactionRepository(db)
+	transactionService := services.NewTransactionService(transactionRepo)
+	transactionHandler := handlers.NewTransactionHandler(transactionService)
+
+	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout) // POST
+
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{

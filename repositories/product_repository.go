@@ -13,8 +13,15 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 	return &ProductRepository{DB: db}
 }
 
-func (r *ProductRepository) GetAll() ([]model.Product, error) {
-	rows, err := r.DB.Query("SELECT id, name, price, stock FROM products")
+func (r *ProductRepository) GetAll(nameFilter string) ([]model.Product, error) {
+	var query string
+	args := []interface{}{}
+	if nameFilter != "" {
+		query += " WHERE p.name ILIKE $1"
+		args = append(args, "%"+nameFilter+"%")
+	}
+
+	rows, err := r.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
