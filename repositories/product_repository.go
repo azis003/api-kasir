@@ -14,10 +14,10 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 }
 
 func (r *ProductRepository) GetAll(nameFilter string) ([]model.Product, error) {
-	var query string
+	query := "SELECT id, name, price, stock FROM products"
 	args := []interface{}{}
 	if nameFilter != "" {
-		query += " WHERE p.name ILIKE $1"
+		query += " WHERE name ILIKE $1"
 		args = append(args, "%"+nameFilter+"%")
 	}
 
@@ -27,7 +27,7 @@ func (r *ProductRepository) GetAll(nameFilter string) ([]model.Product, error) {
 	}
 	defer rows.Close()
 
-	var products []model.Product
+	products := []model.Product{} // Initialize as empty slice
 	for rows.Next() {
 		var p model.Product
 		if err := rows.Scan(&p.ID, &p.Name, &p.Price, &p.Stock); err != nil {
