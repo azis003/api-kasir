@@ -32,6 +32,11 @@ func (h *TransactionHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(req.Items) == 0 {
+		http.Error(w, "Items cannot be empty. Please include 'items' array in request body.", http.StatusBadRequest)
+		return
+	}
+
 	transaction, err := h.service.Checkout(req.Items)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
