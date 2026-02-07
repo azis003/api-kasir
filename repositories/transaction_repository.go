@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"kasir-api/model"
+	"time"
 )
 
 type TransactionRepository struct {
@@ -57,7 +58,9 @@ func (r *TransactionRepository) CreateTransaction(items []model.CheckoutItem) (*
 	}
 
 	var transactionID int
-	err = tx.QueryRow("INSERT INTO transactions (total_amount) VALUES ($1) RETURNING id", totalAmount).Scan(&transactionID)
+	var createdTime time.Time
+
+	err = tx.QueryRow("INSERT INTO transactions (total_amount) VALUES ($1) RETURNING id, created_at", totalAmount).Scan(&transactionID, &createdTime)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +81,7 @@ func (r *TransactionRepository) CreateTransaction(items []model.CheckoutItem) (*
 	return &model.Transaction{
 		ID:          transactionID,
 		TotalAmount: totalAmount,
+		CreatedAt:   createdTime,
 		Details:     details,
 	}, nil
 }
