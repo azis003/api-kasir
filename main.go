@@ -99,6 +99,8 @@ func main() {
 				{"method": "DELETE", "url": "/categories/{id}", "description": "Hapus kategori"},
 				{"method": "GET", "url": "/api/produk", "description": "Ambil semua produk"},
 				{"method": "POST", "url": "/api/produk", "description": "Tambah produk baru"},
+				{"method": "POST", "url": "/api/checkout", "description": "Checkout transaksi baru"},
+				{"method": "GET", "url": "/api/report/hari-ini", "description": "Laporan penjualan hari ini"},
 			},
 		}
 
